@@ -8,35 +8,42 @@ import static java.lang.Math.PI;
 public class Rasterization {
 
     public static void drawArc(PixelWriter pixelWriter, int xc, int yc, int r, double ang1, Color color1, double ang2, Color color2) {
+        int[] multiplier = new int[4];
+        int xz = (int) Math.ceil(ang2/(PI/2));
+        for (int i = multiplier.length-1; i >= 0; i--) {
+            multiplier[i] = (xz-4 > 0) ? 1 : 0;
+            xz-=1;
+        }
         drawAuxilaryAxis(pixelWriter,xc,yc,r-2);
         double dist = ang2 - ang1;
         int x = -r; int y = 0; int error = 1-2*r;
         Color mainColor;
         do {
-            if (angle(xc,yc,xc+x,yc-y) >= ang1 && angle(xc,yc,xc+x,yc-y) <= ang2) {
-                double diff = angle(xc,yc,xc+x,yc-y) - ang1;
-                mainColor = color1.interpolate(color2, diff/dist);
-                pixelWriter.setColor(xc+x, yc-y, mainColor);
-            }
-            if (angle(xc,yc,xc-x,yc+y) >= ang1 && angle(xc,yc,xc-x,yc+y) <= ang2) {
-                double diff = angle(xc,yc,xc-x,yc+y) - ang1;
-                mainColor = color1.interpolate(color2, diff/dist);
-                pixelWriter.setColor(xc-x, yc+y, mainColor);
-            }
-            if (angle(xc,yc,xc+y,yc+x) >= ang1 && angle(xc,yc,xc+y,yc+x) <= ang2) {
-                double diff = angle(xc,yc,xc+y,yc+x) - ang1;
+            double angle = angle(xc,yc,xc+y,yc+x);
+            if (angle + multiplier[0] * 2 * PI >= ang1 && angle + multiplier[0] * 2 * PI <= ang2) {
+                double diff = angle - ang1;
                 mainColor = color1.interpolate(color2, diff/dist);
                 pixelWriter.setColor(xc+y, yc+x, mainColor);
             }
-            if (angle(xc,yc,xc-y,yc-x) >= ang1 && angle(xc,yc,xc-y,yc-x) <= ang2) {
-                double diff = angle(xc,yc,xc-y,yc-x) - ang1;
+            if ((angle+PI/2) + multiplier[1] * 2 * PI >= ang1 && (angle+PI/2) + multiplier[1] * 2 * PI <= ang2) {
+                double diff = angle+PI/2 - ang1;
+                mainColor = color1.interpolate(color2, diff/dist);
+                pixelWriter.setColor(xc+x, yc-y, mainColor);
+            }
+            if ((angle+PI) + multiplier[2] * 2 * PI >= ang1 && (angle+PI) + multiplier[2] * 2 * PI <= ang2) {
+                double diff = angle+PI - ang1;
                 mainColor = color1.interpolate(color2, diff/dist);
                 pixelWriter.setColor(xc-y, yc-x, mainColor);
+            }
+            if ((angle+3*PI/2) + multiplier[3] * 2 * PI >= ang1 && (angle+3*PI/2) + multiplier[3] * 2 * PI <= ang2) {
+                double diff = angle+3*PI/2 - ang1;
+                mainColor = color1.interpolate(color2, diff/dist);
+                pixelWriter.setColor(xc-x, yc+y, mainColor);
             }
             r = error;
             if (r <= y) error += ++y*2+1;
             if (r > x || error > y) error += ++x*2+1;
-        } while (x < 0);
+        } while (x <= 0);
     }
 
     public static double angle(int xc, int yc, int x, int y) {
@@ -44,15 +51,16 @@ public class Rasterization {
         if (dx >= 0 && dy >= 0) {
             return Math.atan((double)dy/dx);
         }
-        else if (dx < 0 && dy > 0) {
+        else if (dx <= 0 && dy >= 0) {
             return Math.toRadians(180)+Math.atan((double)dy/dx);
         }
-        else if (dx <= 0 && dy < 0) {
+        else if (dx <= 0 && dy <= 0) {
             return (dx == 0) ? Math.toRadians(270) : Math.toRadians(180)+Math.atan((double)dy/dx);
         }
-        else { //if (dx > 0 && dy < 0)
+        else if (dx >= 0 && dy <= 0) {
             return Math.toRadians(360)+Math.atan((double)dy/dx);
         }
+        return 0;
     }
 
     public static void drawAuxilaryAxis(PixelWriter pixelWriter, int xc, int yc, int r) {
