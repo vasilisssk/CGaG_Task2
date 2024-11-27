@@ -8,34 +8,32 @@ import static java.lang.Math.PI;
 public class Rasterization {
 
     public static void drawArc(PixelWriter pixelWriter, int xc, int yc, int r, double ang1, Color color1, double ang2, Color color2) {
-        int[] multiplier = new int[4];
-        int xz = (int) Math.ceil(ang2/(PI/2));
-        for (int i = multiplier.length-1; i >= 0; i--) {
-            multiplier[i] = (xz-4 > 0) ? 1 : 0;
-            xz-=1;
-        }
         drawAuxilaryAxis(pixelWriter,xc,yc,r-2);
+        // все ок если ang1 и ang2 принадлежат [0;4*PI)
+        double[] calculatedAngles = calculateAnglesForDrawingArc(ang1, ang2);
+        ang1 = calculatedAngles[0];
+        ang2 = calculatedAngles[1];
         double dist = ang2 - ang1;
         int x = -r; int y = 0; int error = 1-2*r;
         Color mainColor;
         do {
             double angle = angle(xc,yc,xc+y,yc+x);
-            if (angle + multiplier[0] * 2 * PI >= ang1 && angle + multiplier[0] * 2 * PI <= ang2) {
+            if ((angle >= ang1 && angle <= ang2) || (angle + 2*PI >= ang1 && angle + 2*PI <= ang2)) {
                 double diff = angle - ang1;
                 mainColor = color1.interpolate(color2, diff/dist);
                 pixelWriter.setColor(xc+y, yc+x, mainColor);
             }
-            if ((angle+PI/2) + multiplier[1] * 2 * PI >= ang1 && (angle+PI/2) + multiplier[1] * 2 * PI <= ang2) {
+            if (((angle+PI/2) >= ang1 && (angle+PI/2) <= ang2) || ((angle+PI/2) + 2*PI >= ang1 && (angle+PI/2) + 2*PI <= ang2)) {
                 double diff = angle+PI/2 - ang1;
                 mainColor = color1.interpolate(color2, diff/dist);
                 pixelWriter.setColor(xc+x, yc-y, mainColor);
             }
-            if ((angle+PI) + multiplier[2] * 2 * PI >= ang1 && (angle+PI) + multiplier[2] * 2 * PI <= ang2) {
+            if (((angle+PI) >= ang1 && (angle+PI) <= ang2) || ((angle+PI) + 2*PI >= ang1 && (angle+PI) + 2*PI <= ang2)) {
                 double diff = angle+PI - ang1;
                 mainColor = color1.interpolate(color2, diff/dist);
                 pixelWriter.setColor(xc-y, yc-x, mainColor);
             }
-            if ((angle+3*PI/2) + multiplier[3] * 2 * PI >= ang1 && (angle+3*PI/2) + multiplier[3] * 2 * PI <= ang2) {
+            if (((angle+3*PI/2) >= ang1 && (angle+3*PI/2) <= ang2) || ((angle+3*PI/2) + 2*PI >= ang1 && (angle+3*PI/2) + 2*PI <= ang2)) {
                 double diff = angle+3*PI/2 - ang1;
                 mainColor = color1.interpolate(color2, diff/dist);
                 pixelWriter.setColor(xc-x, yc+y, mainColor);
@@ -44,6 +42,28 @@ public class Rasterization {
             if (r <= y) error += ++y*2+1;
             if (r > x || error > y) error += ++x*2+1;
         } while (x <= 0);
+    }
+
+    public static double[] calculateAnglesForDrawingArc(double ang1, double ang2) {
+        double[] angles = new double[2];
+        if (ang1 > ang2) {
+            double temp = ang1;
+            ang1 = ang2;
+            ang2 = temp;
+        }
+        if (ang1 >= 2*PI && ang2 >= 2*PI) {
+            int ang1Div2PI = (int) (ang1/(2*PI));
+            int ang2Div2PI = (int) (ang2/(2*PI));
+            if (ang1Div2PI == ang2Div2PI) {
+                ang1 = ang1 - 2*PI*ang1Div2PI;
+                ang2 = ang2 - 2*PI*ang2Div2PI;
+            } else {
+                ang1 = ang1 - 2*PI*ang1Div2PI;
+                ang2 = ang2 - (2*PI*(ang2Div2PI-1));
+            }
+        }
+        angles[0] = ang1; angles[1] = ang2;
+        return angles;
     }
 
     public static double angle(int xc, int yc, int x, int y) {
@@ -79,36 +99,40 @@ public class Rasterization {
         pixelWriter.setColor(xc, yc, Color.ORANGE);
     }
 
-    public static void bresenhamCircleAlgorithm(PixelWriter pixelWriter, int xc, int yc, int r) {
-        drawAuxilaryAxis(pixelWriter,xc,yc,r-2);
-        int x = -r; int y = 0; int error = 1-2*r;
-        do {
-            pixelWriter.setColor(xc+x, yc-y, Color.RED);
-            pixelWriter.setColor(xc-x, yc+y, Color.RED);
-            pixelWriter.setColor(xc+y, yc+x, Color.RED);
-            pixelWriter.setColor(xc-y, yc-x, Color.RED);
-            r = error;
-            if (r <= y) error += ++y*2+1;
-            if (r > x || error > y) error += ++x*2+1;
-        } while (x < 0);
+    public static void main(String[] args) {
+        System.out.println((int) ((7*PI/2)/(2*PI)));
     }
 
-    public static void bresenhamLineAlgorithm(PixelWriter pixelWriter, int x1, int y1, int x2, int y2) {
-        int dx = x2-x1; int dy = y2-y1;
-        int y = y1;
-        int diry = y2-y1;
-        if (diry > 0) diry = 1;
-        if (diry < 0) diry = -1;
-        double error = 0.5;
-        double deltaerr = (double) (dy)/(dx);
-        for (int i = x1; i < x2+1; i++) {
-            pixelWriter.setColor(i,y, Color.RED);
-            error+=deltaerr;
-            if (error >= 1.0) {
-                y+=diry;
-                error-= 1.0;
-            }
-        }
+//    public static void bresenhamCircleAlgorithm(PixelWriter pixelWriter, int xc, int yc, int r) {
+//        drawAuxilaryAxis(pixelWriter,xc,yc,r-2);
+//        int x = -r; int y = 0; int error = 1-2*r;
+//        do {
+//            pixelWriter.setColor(xc+x, yc-y, Color.RED);
+//            pixelWriter.setColor(xc-x, yc+y, Color.RED);
+//            pixelWriter.setColor(xc+y, yc+x, Color.RED);
+//            pixelWriter.setColor(xc-y, yc-x, Color.RED);
+//            r = error;
+//            if (r <= y) error += ++y*2+1;
+//            if (r > x || error > y) error += ++x*2+1;
+//        } while (x < 0);
+//    }
+
+//    public static void bresenhamLineAlgorithm(PixelWriter pixelWriter, int x1, int y1, int x2, int y2) {
+//        int dx = x2-x1; int dy = y2-y1;
+//        int y = y1;
+//        int diry = y2-y1;
+//        if (diry > 0) diry = 1;
+//        if (diry < 0) diry = -1;
+//        double error = 0.5;
+//        double deltaerr = (double) (dy)/(dx);
+//        for (int i = x1; i < x2+1; i++) {
+//            pixelWriter.setColor(i,y, Color.RED);
+//            error+=deltaerr;
+//            if (error >= 1.0) {
+//                y+=diry;
+//                error-= 1.0;
+//            }
+//        }
 //        int dx = x2 - x1; int dy = y2 - y1; int y = y1; int delta = 2*dy-dx;
 //        for (int i = x1; i < x2+1; i++) {
 //            pixelWriter.setColor(i, y, Color.RED);
@@ -119,7 +143,7 @@ public class Rasterization {
 //                delta+=2*dy;
 //            }
 //        }
-    }
+//    }
 
 //    public static void drawArc(PixelWriter pixelWriter, int xc, int yc, int r, double ang1, Color color1, double ang2, Color color2) {
 //        int flag = 0; // для отслеживания четверти
