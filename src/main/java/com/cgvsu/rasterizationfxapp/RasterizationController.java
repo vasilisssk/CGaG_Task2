@@ -42,7 +42,7 @@ public class RasterizationController {
         Rasterization.drawArc(canvas.getGraphicsContext2D().getPixelWriter(), 650, 220, 5,0, Color.BLACK, PI/2, Color.BLACK); // маленький радиус
 
         int xc1 = 60;
-        for (double i = PI/6; i <= (2*PI)+(PI/6); i+=PI/3) {
+        for (double i = PI/6; i <= (2*PI)+(PI/6); i+=PI/2) {
             Rasterization.drawArc(canvas.getGraphicsContext2D().getPixelWriter(), xc1, 491, 50, i, Color.BLACK, i+((2*PI)-2*(PI/6)), Color.BLACK); // пакмен
             xc1+=110;
         }
